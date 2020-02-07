@@ -36,7 +36,7 @@ namespace 檔案總管汰重_WindowsFormsApplication1
                                 io.File.SetAttributes(itemF, io.FileAttributes.Normal);
                             }
                             io.File.Delete(itemF);//delete from the source file
-                            break;
+                            break;//check the next file in the source directory
                         }
                     }
                 }
