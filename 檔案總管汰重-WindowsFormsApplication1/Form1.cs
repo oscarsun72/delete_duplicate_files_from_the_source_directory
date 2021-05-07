@@ -19,29 +19,62 @@ namespace 檔案總管汰重_WindowsFormsApplication1
 
         private void button1_Click(object sender, EventArgs e)
         {
-
+            if (textBox1.Text== textBox2.Text)
+            {
+                MessageBox.Show("比對兩造雙方之路徑不能一樣！","",MessageBoxButtons.OK,MessageBoxIcon.Error);
+                return;
+            }
+            io.DirectoryInfo di = new io.DirectoryInfo(textBox1.Text);
+            io.FileInfo[] fiArray = di.GetFiles("*.*", io.SearchOption.AllDirectories);
+            io.DirectoryInfo di2 = new io.DirectoryInfo(textBox2.Text);
+            io.FileInfo[] fiArray2 = di2.GetFiles("*.*", io.SearchOption.AllDirectories);
             if (io.Directory.Exists(textBox1.Text) && io.Directory.Exists(textBox2.Text))
             {
-                foreach (var itemF in io.Directory.GetFiles(textBox1.Text))//iterF(F:from;source)
+                //foreach (var itemF in io.Directory.GetFiles(textBox1.Text))//iterF(F:from;source)
+                foreach (io.FileInfo itemF in fiArray)//iterF(F:from;source)
                 {
-                    io.FileInfo f = new io.FileInfo(itemF);
-                    foreach (var itemT in io.Directory.GetFiles(textBox2.Text))//iterT(T:to;destination)
+                    io.FileInfo f = new io.FileInfo(itemF.FullName);
+                    //foreach (var itemT in io.Directory.GetFiles(textBox2.Text))//iterT(T:to;destination)
+                    foreach (io.FileInfo itemT in fiArray2)//iterT(T:to;destination)
                     {
-                        io.FileInfo ft = new io.FileInfo(itemT);
+                        io.FileInfo ft = new io.FileInfo(itemT.FullName);
                         if (f.LastWriteTime == ft.LastWriteTime && f.Length == ft.Length && f.Name == ft.Name)
                         //if ( f.LastWriteTime==ft.LastWriteTime && f.Length==ft.Length  )//不比對檔名
                         {
-                            if (io.File.GetAttributes(itemF).ToString().IndexOf(io.FileAttributes.ReadOnly.ToString()) != -1)
+                            if (io.File.GetAttributes(itemF.FullName).ToString().IndexOf(io.FileAttributes.ReadOnly.ToString()) != -1)
                             {
-                                io.File.SetAttributes(itemF, io.FileAttributes.Normal);
+                                io.File.SetAttributes(itemF.FullName, io.FileAttributes.Normal);
                             }
-                            io.File.Delete(itemF);//delete from the source file
+                            io.File.Delete(itemF.FullName);//delete from the source file
                             break;//check the next file in the source directory
                         }
                     }
                 }
-                if (io.Directory.GetFiles(textBox1.Text).Count() == 0)//if no more files in this directory
-                    io.Directory.Delete(textBox1.Text);                       //then delete this directory
+                di = new io.DirectoryInfo(textBox1.Text);
+                fiArray = di.GetFiles("*.*", io.SearchOption.AllDirectories);
+                if (fiArray.Length == 0)
+                {
+                    io.DirectoryInfo[] diSubfolders = di.GetDirectories("*.*", io.SearchOption.AllDirectories);
+                    if (diSubfolders.Length == 0)
+                    {
+                        io.Directory.Delete(textBox1.Text); //if no more files in this directory then delete this directory
+                                                            //若但用 if (io.Directory.GetFiles(textBox1.Text).Count() == 0）來判斷，則當尚有子目錄時會出錯
+                    }
+                    else
+                    {
+                        while (diSubfolders.Length > 0)
+                        {
+                            for (int i = 0; i < diSubfolders.Length; i++)
+                            {
+                                try { diSubfolders[i].Delete(); i--; diSubfolders = di.GetDirectories("*.*", io.SearchOption.AllDirectories); }
+                                catch { continue; }
+                            }
+                        }
+                        io.Directory.Delete(textBox1.Text);
+                    }
+                }
+                else
+                { MessageBox.Show("尚有子目錄待比對"); return; }
                 MessageBox.Show("done!");
             }
             else
