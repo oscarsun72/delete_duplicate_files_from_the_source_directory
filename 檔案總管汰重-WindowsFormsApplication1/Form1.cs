@@ -73,9 +73,8 @@ namespace 檔案總管汰重_WindowsFormsApplication1
                         io.Directory.Delete(textBox1.Text);
                     }
                 }
-                else
-                { MessageBox.Show("尚有子目錄待比對"); return; }
-                MessageBox.Show("done!");
+                else                
+                    MessageBox.Show("done!");
             }
             else
             {
