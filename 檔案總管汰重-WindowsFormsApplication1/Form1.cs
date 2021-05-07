@@ -1,10 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.ComponentModel;
 using System.Data;
-using System.Drawing;
+using System.IO;
 using System.Linq;
-using System.Text;
 using System.Windows.Forms;
 using io = System.IO;
 
@@ -19,9 +17,9 @@ namespace 檔案總管汰重_WindowsFormsApplication1
 
         private void button1_Click(object sender, EventArgs e)
         {
-            if (textBox1.Text== textBox2.Text)
+            if (textBox1.Text == textBox2.Text)
             {
-                MessageBox.Show("比對兩造雙方之路徑不能一樣！","",MessageBoxButtons.OK,MessageBoxIcon.Error);
+                MessageBox.Show("比對兩造雙方之路徑不能一樣！", "", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 return;
             }
             io.DirectoryInfo di = new io.DirectoryInfo(textBox1.Text);
@@ -52,9 +50,10 @@ namespace 檔案總管汰重_WindowsFormsApplication1
                 }
                 di = new io.DirectoryInfo(textBox1.Text);
                 fiArray = di.GetFiles("*.*", io.SearchOption.AllDirectories);
+                io.DirectoryInfo[] diSubfolders;
                 if (fiArray.Length == 0)
-                {
-                    io.DirectoryInfo[] diSubfolders = di.GetDirectories("*.*", io.SearchOption.AllDirectories);
+                {//當沒有檔案，只剩資料夾時
+                    diSubfolders = di.GetDirectories("*.*", io.SearchOption.AllDirectories);
                     if (diSubfolders.Length == 0)
                     {
                         io.Directory.Delete(textBox1.Text); //if no more files in this directory then delete this directory
@@ -62,19 +61,26 @@ namespace 檔案總管汰重_WindowsFormsApplication1
                     }
                     else
                     {
-                        while (diSubfolders.Length > 0)
-                        {
-                            for (int i = 0; i < diSubfolders.Length; i++)
-                            {
-                                try { diSubfolders[i].Delete(); i--; diSubfolders = di.GetDirectories("*.*", io.SearchOption.AllDirectories); }
-                                catch { continue; }
-                            }
-                        }
-                        io.Directory.Delete(textBox1.Text);
+                        diSubfolders = clearEmptyFolders(di, diSubfolders);
                     }
                 }
-                else                
-                    MessageBox.Show("done!");
+                else
+                {//還有檔案，又有空資料夾時
+                    di = new io.DirectoryInfo(textBox1.Text);
+                    diSubfolders = di.GetDirectories("*.*", io.SearchOption.AllDirectories);
+                    clearEmptyFolders(di, diSubfolders);
+                    //IEnumerable<io.DirectoryInfo> subDi =
+                    //    from subD in diSubfolders
+                    //    where subD.GetFiles("*.*", io.SearchOption.AllDirectories).Length == 0
+                    //    select subD;
+                    //foreach (io.DirectoryInfo sDi in subDi)
+                    //{
+                    //clearEmptyFolders(sDi, sDi.GetDirectories
+                    //    ("*.*", io.SearchOption.AllDirectories));
+                    //}
+
+                }
+                MessageBox.Show("done!");
             }
             else
             {
@@ -82,15 +88,67 @@ namespace 檔案總管汰重_WindowsFormsApplication1
             }
         }
 
+        private static DirectoryInfo[] clearEmptyFolders(DirectoryInfo di,
+            DirectoryInfo[] diSubfolders)
+        {
+            IEnumerable<io.DirectoryInfo> sdI = from dI in di.GetDirectories("*.*", io.SearchOption.AllDirectories)
+                                                where dI.GetFiles("*.*", io.SearchOption.AllDirectories).Count() == 0 && dI.GetDirectories
+                                                ("*.*", io.SearchOption.AllDirectories).Count() == 0
+                                                select dI;
+            while (sdI.Count() > 0)
+            {
+                foreach (DirectoryInfo sdi in sdI)
+                {
+                    if (sdi.GetFiles("*.*", io.SearchOption.AllDirectories).Length == 0)
+                    {
+                        if (sdi.Attributes.ToString().IndexOf(io.FileAttributes.ReadOnly.ToString()) != -1)
+                            sdi.Attributes &= ~io.FileAttributes.ReadOnly;
+                        io.DirectoryInfo[] dis = sdi.GetDirectories("*.*", io.SearchOption.AllDirectories);
+                        if (dis.Length == 0)
+                        {
+                            sdi.Delete();
+                        }
+                        sdI = from dI in di.GetDirectories("*.*", io.SearchOption.AllDirectories)
+                              where dI.GetFiles("*.*", io.SearchOption.AllDirectories).Count() == 0 && dI.GetDirectories
+                              ("*.*", io.SearchOption.AllDirectories).Count() == 0
+                              select dI;
+
+                    }
+                }
+            }
+            //while (diSubfolders.Length > 0)
+            //{
+            //    for (int i = 0; i < diSubfolders.Length; i++)
+            //    {
+            //        try
+            //        {
+            //            if (diSubfolders[i].Attributes == io.FileAttributes.ReadOnly)
+            //                di.Attributes &= ~io.FileAttributes.ReadOnly;
+            //            diSubfolders[i].Delete(); i--;
+            //            diSubfolders =
+            //                di.GetDirectories
+            //                ("*.*", io.SearchOption.AllDirectories);
+            //        }
+            //        catch { continue; }
+            //    }
+            //}
+            if (di.GetFiles("*.*", io.SearchOption.AllDirectories).Count() == 0)
+            {
+                if (di.Attributes.ToString().IndexOf(io.FileAttributes.ReadOnly.ToString()) != -1)
+                    di.Attributes &= ~io.FileAttributes.ReadOnly;//https://stackoverflow.com/questions/2316308/remove-readonly-attribute-from-directory
+                di.Delete();
+            }
+            return diSubfolders;
+        }
 
         private void textBox1_Click(object sender, EventArgs e)
         {
-            textBox1.Text = "";
+            //textBox1.Text = "";
             textBox1.Text = Clipboard.GetText();
         }
         private void textBox2_Click(object sender, EventArgs e)
         {
-            textBox2.Text = "";
+            //textBox2.Text = "";
             textBox2.Text = Clipboard.GetText();
         }
 
