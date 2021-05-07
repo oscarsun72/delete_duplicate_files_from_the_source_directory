@@ -39,10 +39,11 @@ namespace 檔案總管汰重_WindowsFormsApplication1
                         if (f.LastWriteTime == ft.LastWriteTime && f.Length == ft.Length && f.Name == ft.Name)
                         //if ( f.LastWriteTime==ft.LastWriteTime && f.Length==ft.Length  )//不比對檔名
                         {
-                            if (io.File.GetAttributes(itemF.FullName).ToString().IndexOf(io.FileAttributes.ReadOnly.ToString()) != -1)
-                            {
-                                io.File.SetAttributes(itemF.FullName, io.FileAttributes.Normal);
-                            }
+                            //if (io.File.GetAttributes(itemF.FullName).ToString().IndexOf(io.FileAttributes.ReadOnly.ToString()) != -1)
+                            //{
+                            //    io.File.SetAttributes(itemF.FullName, io.FileAttributes.Normal);
+                            //}
+                            NoReadonly(itemF);
                             io.File.Delete(itemF.FullName);//delete from the source file                            
                             break;//check the next file in the source directory
                         }
@@ -101,8 +102,7 @@ namespace 檔案總管汰重_WindowsFormsApplication1
                 {
                     if (sdi.GetFiles("*.*", io.SearchOption.AllDirectories).Length == 0)
                     {
-                        if (sdi.Attributes.ToString().IndexOf(io.FileAttributes.ReadOnly.ToString()) != -1)
-                            sdi.Attributes &= ~io.FileAttributes.ReadOnly;
+                        NoReadonly(sdi);
                         io.DirectoryInfo[] dis = sdi.GetDirectories("*.*", io.SearchOption.AllDirectories);
                         if (dis.Length == 0)
                         {
@@ -134,13 +134,38 @@ namespace 檔案總管汰重_WindowsFormsApplication1
             //}
             if (di.GetFiles("*.*", io.SearchOption.AllDirectories).Count() == 0)
             {
-                if (di.Attributes.ToString().IndexOf(io.FileAttributes.ReadOnly.ToString()) != -1)
-                    di.Attributes &= ~io.FileAttributes.ReadOnly;//https://stackoverflow.com/questions/2316308/remove-readonly-attribute-from-directory
+                //if (di.Attributes.ToString().IndexOf(io.FileAttributes.ReadOnly.ToString()) != -1)
+                //    di.Attributes &= ~io.FileAttributes.ReadOnly;//https://stackoverflow.com/questions/2316308/remove-readonly-attribute-from-directory
+                NoReadonly(di);
                 di.Delete();
             }
             return diSubfolders;
         }
 
+        public static bool IsReadonly(DirectoryInfo di)
+        {
+            if (di.Attributes.ToString().IndexOf(io.FileAttributes.ReadOnly.ToString()) != -1) return true; else return false;
+        }
+        public static bool IsReadonly(FileInfo fi)
+        {
+            if (fi.Attributes.ToString().IndexOf(io.FileAttributes.ReadOnly.ToString()) != -1) return true; else return false;
+        }
+        public static void SwitchReadonly(DirectoryInfo di)
+        {
+            di.Attributes &= ~io.FileAttributes.ReadOnly;
+        }
+        public static void SwitchReadonly(FileInfo fi)
+        {
+            fi.Attributes &= ~io.FileAttributes.ReadOnly;
+        }
+        public static void NoReadonly(DirectoryInfo di)
+        {
+            if(IsReadonly(di)) di.Attributes &= ~io.FileAttributes.ReadOnly;
+        }
+        public static void NoReadonly(FileInfo fi)
+        {
+            if (IsReadonly(fi)) fi.Attributes &= ~io.FileAttributes.ReadOnly;
+        }
         private void textBox1_Click(object sender, EventArgs e)
         {
             //textBox1.Text = "";
