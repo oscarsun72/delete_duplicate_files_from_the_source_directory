@@ -62,14 +62,14 @@ namespace 檔案總管汰重_WindowsFormsApplication1
                     }
                     else
                     {
-                        diSubfolders = clearEmptyFolders(di, diSubfolders);
+                        diSubfolders = ClearEmptyFolders(di, diSubfolders);
                     }
                 }
                 else
                 {//還有檔案，又有空資料夾時
                     di = new io.DirectoryInfo(textBox1.Text);
                     diSubfolders = di.GetDirectories("*.*", io.SearchOption.AllDirectories);
-                    clearEmptyFolders(di, diSubfolders);
+                    ClearEmptyFolders(di, diSubfolders);
                     //IEnumerable<io.DirectoryInfo> subDi =
                     //    from subD in diSubfolders
                     //    where subD.GetFiles("*.*", io.SearchOption.AllDirectories).Length == 0
@@ -89,7 +89,7 @@ namespace 檔案總管汰重_WindowsFormsApplication1
             }
         }
 
-        private static DirectoryInfo[] clearEmptyFolders(DirectoryInfo di,
+        public static DirectoryInfo[] ClearEmptyFolders(DirectoryInfo di,
             DirectoryInfo[] diSubfolders)
         {
             IEnumerable<io.DirectoryInfo> sdI = from dI in di.GetDirectories("*.*", io.SearchOption.AllDirectories)
