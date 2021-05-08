@@ -17,22 +17,28 @@ namespace 檔案總管汰重_WindowsFormsApplication1
 
         private void button1_Click(object sender, EventArgs e)
         {
-            if (textBox1.Text == textBox2.Text)
+            if (string.IsNullOrWhiteSpace(textBox1.Text) || string.IsNullOrWhiteSpace(textBox1.Text)) return;
+            if ( textBox1.Text == textBox2.Text)
             {
                 MessageBox.Show("比對兩造雙方之路徑不能一樣！", "", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 return;
             }
-            io.DirectoryInfo di = new io.DirectoryInfo(textBox1.Text);
+            deleteDuplicateFilesFromSource(textBox1.Text,textBox2.Text);
+        }
+
+        private void deleteDuplicateFilesFromSource(string sourceDir,string DestDir)
+        {
+            io.DirectoryInfo di = new io.DirectoryInfo(sourceDir);
             io.FileInfo[] fiArray = di.GetFiles("*.*", io.SearchOption.AllDirectories);
-            io.DirectoryInfo di2 = new io.DirectoryInfo(textBox2.Text);
+            io.DirectoryInfo di2 = new io.DirectoryInfo(DestDir);
             io.FileInfo[] fiArray2 = di2.GetFiles("*.*", io.SearchOption.AllDirectories);
-            if (io.Directory.Exists(textBox1.Text) && io.Directory.Exists(textBox2.Text))
+            if (io.Directory.Exists(sourceDir) && io.Directory.Exists(DestDir))
             {
-                //foreach (var itemF in io.Directory.GetFiles(textBox1.Text))//iterF(F:from;source)
+                //foreach (var itemF in io.Directory.GetFiles(sourceDir))//iterF(F:from;source)
                 foreach (io.FileInfo itemF in fiArray)//iterF(F:from;source)
                 {//F=from 來源檔（拿來比較之檔，相同則刪除）;T=to 目的檔（被比較的檔案，相同則保留）;
                     io.FileInfo f = new io.FileInfo(itemF.FullName);
-                    //foreach (var itemT in io.Directory.GetFiles(textBox2.Text))//iterT(T:to;destination)
+                    //foreach (var itemT in io.Directory.GetFiles(DestDir))//iterT(T:to;destination)
                     foreach (io.FileInfo itemT in fiArray2)//iterT(T:to;destination)
                     {
                         io.FileInfo ft = new io.FileInfo(itemT.FullName);
@@ -58,7 +64,7 @@ namespace 檔案總管汰重_WindowsFormsApplication1
                         }
                     }
                 }
-                //di = new io.DirectoryInfo(textBox1.Text);
+                //di = new io.DirectoryInfo(sourceDir);
                 fiArray = di.GetFiles("*.*", io.SearchOption.AllDirectories);
                 io.DirectoryInfo[] diSubfolders;
                 if (fiArray.Length == 0)
@@ -66,8 +72,8 @@ namespace 檔案總管汰重_WindowsFormsApplication1
                     diSubfolders = di.GetDirectories("*.*", io.SearchOption.AllDirectories);
                     if (diSubfolders.Length == 0)
                     {//如果沒有子資料夾/子目錄時，就直接刪除處理的資料夾目錄：
-                        io.Directory.Delete(textBox1.Text); //if no more files in this directory then delete this directory
-                                                            //若但用 if (io.Directory.GetFiles(textBox1.Text).Count() == 0）來判斷，則當尚有子目錄時會出錯
+                        io.Directory.Delete(sourceDir); //if no more files in this directory then delete this directory
+                                                            //若但用 if (io.Directory.GetFiles(sourceDir).Count() == 0）來判斷，則當尚有子目錄時會出錯
                     }
                     else
                     {//如果有子資料夾/子目錄時，須逐一清空各資料夾目錄（當某一資料夾含有子目錄時，不能直接將其刪除）：
@@ -76,7 +82,7 @@ namespace 檔案總管汰重_WindowsFormsApplication1
                 }
                 else
                 {//還有檔案，又有空資料夾時
-                    //di = new io.DirectoryInfo(textBox1.Text);
+                    //di = new io.DirectoryInfo(sourceDir);
                     diSubfolders = di.GetDirectories("*.*", io.SearchOption.AllDirectories);
                     ClearEmptyFolders(di, diSubfolders);
                 }
@@ -96,13 +102,13 @@ namespace 檔案總管汰重_WindowsFormsApplication1
             //io.File.Delete(fileInfo.FullName);//delete from the source file                            
         }
 
-        public static DirectoryInfo[] ClearEmptyFolders(DirectoryInfo di,
-            DirectoryInfo[] diSubfolders)
+        public static DirectoryInfo[] ClearEmptyFolders(DirectoryInfo di, DirectoryInfo[] diSubfolders)
         {
-            IEnumerable<io.DirectoryInfo> sdI = from dI in di.GetDirectories("*.*", io.SearchOption.AllDirectories)
-                                                where dI.GetFiles("*.*", io.SearchOption.AllDirectories).Count() == 0 && dI.GetDirectories
-                                                ("*.*", io.SearchOption.AllDirectories).Count() == 0
-                                                select dI;
+            IEnumerable<io.DirectoryInfo> sdI =
+                from dI in di.GetDirectories("*.*", io.SearchOption.AllDirectories)
+                where dI.GetFiles("*.*", io.SearchOption.AllDirectories).Count() == 0 && dI.GetDirectories
+                ("*.*", io.SearchOption.AllDirectories).Count() == 0
+                select dI;
             while (sdI.Count() > 0)
             {
                 foreach (DirectoryInfo sdi in sdI)
@@ -123,6 +129,7 @@ namespace 檔案總管汰重_WindowsFormsApplication1
                     }
                 }
             }
+            #region past method
             //while (diSubfolders.Length > 0)
             //{
             //    for (int i = 0; i < diSubfolders.Length; i++)
@@ -139,6 +146,7 @@ namespace 檔案總管汰重_WindowsFormsApplication1
             //        catch { continue; }
             //    }
             //}
+            #endregion
             if (di.GetFiles("*.*", io.SearchOption.AllDirectories).Count() == 0)
             {
                 //if (di.Attributes.ToString().IndexOf(io.FileAttributes.ReadOnly.ToString()) != -1)
