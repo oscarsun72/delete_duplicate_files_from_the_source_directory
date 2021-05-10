@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Data;
+using System.Diagnostics;
+using System.Drawing;
 using System.IO;
 using System.Linq;
 using System.Windows.Forms;
@@ -18,15 +20,18 @@ namespace 檔案總管汰重_WindowsFormsApplication1
         private void button1_Click(object sender, EventArgs e)
         {
             if (string.IsNullOrWhiteSpace(textBox1.Text) || string.IsNullOrWhiteSpace(textBox1.Text)) return;
-            if ( textBox1.Text == textBox2.Text)
+            if (textBox1.Text == textBox2.Text)
             {
                 MessageBox.Show("比對兩造雙方之路徑不能一樣！", "", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 return;
             }
-            deleteDuplicateFilesFromSource(textBox1.Text,textBox2.Text);
+            Color cl = BackColor;
+            BackColor = Color.Red; Refresh();
+            deleteDuplicateFilesFromSource(textBox1.Text, textBox2.Text);
+            BackColor = cl; Refresh();
         }
 
-        private void deleteDuplicateFilesFromSource(string sourceDir,string DestDir)
+        private void deleteDuplicateFilesFromSource(string sourceDir, string DestDir)
         {
             io.DirectoryInfo di = new io.DirectoryInfo(sourceDir);
             io.FileInfo[] fiArray = di.GetFiles("*.*", io.SearchOption.AllDirectories);
@@ -73,7 +78,7 @@ namespace 檔案總管汰重_WindowsFormsApplication1
                     if (diSubfolders.Length == 0)
                     {//如果沒有子資料夾/子目錄時，就直接刪除處理的資料夾目錄：
                         io.Directory.Delete(sourceDir); //if no more files in this directory then delete this directory
-                                                            //若但用 if (io.Directory.GetFiles(sourceDir).Count() == 0）來判斷，則當尚有子目錄時會出錯
+                                                        //若但用 if (io.Directory.GetFiles(sourceDir).Count() == 0）來判斷，則當尚有子目錄時會出錯
                     }
                     else
                     {//如果有子資料夾/子目錄時，須逐一清空各資料夾目錄（當某一資料夾含有子目錄時，不能直接將其刪除）：
@@ -86,7 +91,7 @@ namespace 檔案總管汰重_WindowsFormsApplication1
                     diSubfolders = di.GetDirectories("*.*", io.SearchOption.AllDirectories);
                     ClearEmptyFolders(di, diSubfolders);
                 }
-                MessageBox.Show("done!");
+                //MessageBox.Show("done!");
             }
             else
             {
@@ -235,6 +240,21 @@ namespace 檔案總管汰重_WindowsFormsApplication1
             if (e.KeyCode == Keys.Escape)
             {
                 this.Close();
+            }
+        }
+
+        private void textBox1_MouseDown(object sender, MouseEventArgs e)
+        {
+            TextBox tbx = (TextBox)sender;
+            switch (e.Button)
+            {
+                case MouseButtons.Right:
+                    Process pc = new Process();
+                    pc.StartInfo.FileName =tbx.Text;
+                    pc.Start();
+                    break;
+                default:
+                    break;
             }
         }
     }
