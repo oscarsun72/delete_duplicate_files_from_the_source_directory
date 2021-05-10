@@ -250,7 +250,8 @@ namespace 檔案總管汰重_WindowsFormsApplication1
             {
                 case MouseButtons.Right:
                     Process pc = new Process();
-                    pc.StartInfo.FileName =tbx.Text;
+                    if (Directory.Exists(tbx.Text) == false) return;
+                    pc.StartInfo.FileName = tbx.Text;
                     pc.Start();
                     break;
                 default:
