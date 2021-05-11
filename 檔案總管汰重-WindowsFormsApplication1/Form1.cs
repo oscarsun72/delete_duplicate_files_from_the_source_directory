@@ -12,6 +12,7 @@ namespace 檔案總管汰重_WindowsFormsApplication1
 {
     public partial class Form1 : Form
     {
+        string[] dirs;
         public Form1()
         {
             InitializeComponent();
@@ -27,7 +28,10 @@ namespace 檔案總管汰重_WindowsFormsApplication1
             }
             Color cl = BackColor;
             BackColor = Color.Red; Refresh();
-            deleteDuplicateFilesFromSourceLinq(textBox1.Text, textBox2.Text);
+            foreach (string item in dirs)
+            {//textBox1.Text=dirs[0]
+                deleteDuplicateFilesFromSourceLinq(item, textBox2.Text);
+            }
             BackColor = cl; Refresh();
         }
 
@@ -378,9 +382,10 @@ namespace 檔案總管汰重_WindowsFormsApplication1
         private void textBox1_DragDrop(object sender, DragEventArgs e)
         {//https://www.google.com/search?rlz=1C1OKWM_zh-TWTW847TW847&ei=W7wBXbDjG8Kk8AWfkYGoBQ&q=c%23+%E6%8B%96%E6%8B%89%E7%89%A9%E4%BB%B6+%E8%B3%87%E6%96%99%E5%A4%BE&oq=c%23+%E6%8B%96%E6%8B%89%E7%89%A9%E4%BB%B6+%E8%B3%87%E6%96%99&gs_l=psy-ab.3.0.33i160l2.11461.20026..22176...0.0..0.99.232.3......0....1..gws-wiz.......0i30.KqdNNbPjI8A
             //https://wijtb.nctu.me/archives/269/
-            string[] filePaths = (string[])e.Data.GetData(DataFormats.FileDrop);
-            this.textBox1.Text = filePaths[0];//目前只取多種選取的第一個
+            dirs = (string[])e.Data.GetData(DataFormats.FileDrop);
+            this.textBox1.Text = dirs[0];//目前只取多種選取的第一個
             //拖放作業目前只取多種選取的第一個，蓋若有多個資料夾要與一個目的夾比對，可以移至同一個母資料夾下，再指定該新建的母資料夾為來源夾即可
+            //現在以dirs欄位來作為執行時的判斷，只要dirs.Lenght>1 就以dirs為參考，不選取textBox1.Text的值
         }
 
         private void textBox2_DragDrop(object sender, DragEventArgs e)
