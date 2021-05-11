@@ -379,13 +379,13 @@ namespace 檔案總管汰重_WindowsFormsApplication1
         {//https://www.google.com/search?rlz=1C1OKWM_zh-TWTW847TW847&ei=W7wBXbDjG8Kk8AWfkYGoBQ&q=c%23+%E6%8B%96%E6%8B%89%E7%89%A9%E4%BB%B6+%E8%B3%87%E6%96%99%E5%A4%BE&oq=c%23+%E6%8B%96%E6%8B%89%E7%89%A9%E4%BB%B6+%E8%B3%87%E6%96%99&gs_l=psy-ab.3.0.33i160l2.11461.20026..22176...0.0..0.99.232.3......0....1..gws-wiz.......0i30.KqdNNbPjI8A
             //https://wijtb.nctu.me/archives/269/
             string[] filePaths = (string[])e.Data.GetData(DataFormats.FileDrop);
-            this.textBox1.Text = filePaths[0];
+            this.textBox1.Text = filePaths[0];//目前只取多種選取的第一個
         }
 
         private void textBox2_DragDrop(object sender, DragEventArgs e)
         {
             string[] filePaths = (string[])e.Data.GetData(DataFormats.FileDrop);
-            this.textBox2.Text = filePaths[0];
+            this.textBox2.Text = filePaths[0];//目前只取多種選取的第一個
         }
 
         private void checkBox1_CheckedChanged(object sender, EventArgs e)
