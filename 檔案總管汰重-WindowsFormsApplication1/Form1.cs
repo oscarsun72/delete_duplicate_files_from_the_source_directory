@@ -27,29 +27,134 @@ namespace 檔案總管汰重_WindowsFormsApplication1
             }
             Color cl = BackColor;
             BackColor = Color.Red; Refresh();
-            deleteDuplicateFilesFromSource(textBox1.Text, textBox2.Text);
+            deleteDuplicateFilesFromSourceLinq(textBox1.Text, textBox2.Text);
             BackColor = cl; Refresh();
         }
 
+        void deleteDuplicateFilesInaDirectoryLinq(DirectoryInfo di)
+        {
+            IEnumerable<FileInfo> fiIEnum = di.GetFiles("*.*", SearchOption.AllDirectories);
+            IEnumerable<FileInfo> fiIEnumDuplicate;
+            if (fiIEnum.Count() == 0) return;
+            if (checkBox2.Checked)//不比對檔名
+            {
+                foreach (FileInfo fi in fiIEnum)
+                {   //取得所有重複的檔案
+                    fiIEnumDuplicate = from f in fiIEnum
+                                       where f.FullName != fi.FullName //不包括本身（即至少留下一個檔案）
+                                         && f.Length == fi.Length && f.LastWriteTime == fi.LastWriteTime &&
+                                         f.Extension == fi.Extension
+                                       select f;
+                    foreach (var item in fiIEnumDuplicate)
+                    {
+                        DeleteFileRemoveReadOnly(item);//刪除所有重複的檔案
+                    }
+                    fiIEnum = di.GetFiles("*.*", SearchOption.AllDirectories);//刪除後更新檔案目錄清單
+                }
+            }
+            else
+            {
+                foreach (FileInfo fi in fiIEnum)
+                {   //取得所有重複的檔案
+                    fiIEnumDuplicate = from f in fiIEnum
+                                       where f.FullName != fi.FullName //不包括本身（即至少留下一個檔案）
+                                         && f.Length == fi.Length && f.LastWriteTime == fi.LastWriteTime &&
+                                         f.Name == fi.Name//前後二者唯有此處條件略異耳20210511
+                                       select f;
+                    foreach (var item in fiIEnumDuplicate)
+                    {
+                        DeleteFileRemoveReadOnly(item);//刪除所有重複的檔案
+                    }
+                    fiIEnum = di.GetFiles("*.*", SearchOption.AllDirectories);//刪除後更新檔案目錄清單
+                }
+            }
+            ClearEmptyFolders(di, di.GetDirectories());//清空所有空的資料夾
+        }
+        private void deleteDuplicateFilesFromSourceLinq(string sourceDir, string DestDir)
+        {
+            if (io.Directory.Exists(sourceDir) && io.Directory.Exists(DestDir))            {
+                
+                io.DirectoryInfo di = new io.DirectoryInfo(sourceDir);
+                IEnumerable<FileInfo> fiIEnum;
+                io.DirectoryInfo di2 = new io.DirectoryInfo(DestDir);
+                deleteDuplicateFilesInaDirectoryLinq(di2);//先刪除目的檔案中所有重複的檔案
+                io.FileInfo[] fiArray2 = di2.GetFiles("*.*", io.SearchOption.AllDirectories);
+                //foreach (io.FileInfo itemF in fiArray)//iterF(F:from;source)
+                //{//F=from 來源檔（拿來比較之檔，相同則刪除）;T=to 目的檔（被比較的檔案，相同則保留）;
+                foreach (io.FileInfo itemT in fiArray2)//iterT(T:to;destination)
+                {
+                    if (checkBox2.Checked)//not identical
+                    {
+                        fiIEnum = from f in di.GetFiles("*.*", io.SearchOption.AllDirectories)
+                                  where f.LastWriteTime == itemT.LastWriteTime &&
+                                  f.Length == itemT.Length && f.Extension == itemT.Extension
+                                  select f; //不比對檔名，只比對副檔名
+                        foreach (FileInfo itemF in fiIEnum)
+                        {
+                            DeleteFileRemoveReadOnly(itemF);
+                        }
+                    }
+                    else
+                    {
+                        fiIEnum = from f in di.GetFiles("*.*", io.SearchOption.AllDirectories)
+                                  where f.LastWriteTime == itemT.LastWriteTime &&
+                                  f.Length == itemT.Length && f.Name == itemT.Name//比對檔名(identical)
+                                  select f;
+                        foreach (FileInfo itemF in fiIEnum)
+                        {
+                            DeleteFileRemoveReadOnly(itemF);
+                        }
+
+                    }
+                    //check the next file in the Destination directory
+                }
+                //}
+                //di = new io.DirectoryInfo(sourceDir);
+                fiIEnum = di.GetFiles("*.*", io.SearchOption.AllDirectories);
+                io.DirectoryInfo[] diSubfolders;
+                if (fiIEnum.Count() == 0)
+                {//當沒有檔案，只剩資料夾時
+                    diSubfolders = di.GetDirectories("*.*", io.SearchOption.AllDirectories);
+                    if (diSubfolders.Length == 0)
+                    {//如果沒有子資料夾/子目錄時，就直接刪除處理的資料夾目錄：
+                        io.Directory.Delete(sourceDir); //if no more files in this directory then delete this directory
+                                                        //若但用 if (io.Directory.GetFiles(sourceDir).Count() == 0）來判斷，則當尚有子目錄時會出錯
+                    }
+                    else
+                    {//如果有子資料夾/子目錄時，須逐一清空各資料夾目錄（當某一資料夾含有子目錄時，不能直接將其刪除）：
+                        diSubfolders = ClearEmptyFolders(di, diSubfolders);
+                    }
+                }
+                else
+                {//還有檔案，又有空資料夾時
+                    //di = new io.DirectoryInfo(sourceDir);
+                    diSubfolders = di.GetDirectories("*.*", io.SearchOption.AllDirectories);
+                    ClearEmptyFolders(di, diSubfolders);
+                }
+                //MessageBox.Show("done!");
+            }
+            else
+            {
+                MessageBox.Show("路徑有誤！");
+            }
+        }
         private void deleteDuplicateFilesFromSource(string sourceDir, string DestDir)
         {
-            io.DirectoryInfo di = new io.DirectoryInfo(sourceDir);
-            io.FileInfo[] fiArray = di.GetFiles("*.*", io.SearchOption.AllDirectories);
-            io.DirectoryInfo di2 = new io.DirectoryInfo(DestDir);
-            io.FileInfo[] fiArray2 = di2.GetFiles("*.*", io.SearchOption.AllDirectories);
             if (io.Directory.Exists(sourceDir) && io.Directory.Exists(DestDir))
             {
+                io.DirectoryInfo di = new io.DirectoryInfo(sourceDir);
+                io.FileInfo[] fiArray = di.GetFiles("*.*", io.SearchOption.AllDirectories);
+                io.DirectoryInfo di2 = new io.DirectoryInfo(DestDir);
+                io.FileInfo[] fiArray2 = di2.GetFiles("*.*", io.SearchOption.AllDirectories);
                 //foreach (var itemF in io.Directory.GetFiles(sourceDir))//iterF(F:from;source)
                 foreach (io.FileInfo itemF in fiArray)//iterF(F:from;source)
                 {//F=from 來源檔（拿來比較之檔，相同則刪除）;T=to 目的檔（被比較的檔案，相同則保留）;
-                    io.FileInfo f = new io.FileInfo(itemF.FullName);
                     //foreach (var itemT in io.Directory.GetFiles(DestDir))//iterT(T:to;destination)
                     foreach (io.FileInfo itemT in fiArray2)//iterT(T:to;destination)
                     {
-                        io.FileInfo ft = new io.FileInfo(itemT.FullName);
                         if (checkBox2.Checked)//not identical
                         {
-                            if (f.LastWriteTime == ft.LastWriteTime && f.Length == ft.Length && f.Extension == ft.Extension)//不比對檔名，只比對副檔名
+                            if (itemF.LastWriteTime == itemT.LastWriteTime && itemF.Length == itemT.Length && itemF.Extension == itemT.Extension)//不比對檔名，只比對副檔名
                             {
                                 DeleteFileRemoveReadOnly(itemF);
                                 break;//check the next file in the source(from) directory
@@ -57,7 +162,7 @@ namespace 檔案總管汰重_WindowsFormsApplication1
                         }
                         else
                         {
-                            if (f.LastWriteTime == ft.LastWriteTime && f.Length == ft.Length && f.Name == ft.Name)//比對檔名(identical)
+                            if (itemF.LastWriteTime == itemT.LastWriteTime && itemF.Length == itemT.Length && itemF.Name == itemT.Name)//比對檔名(identical)
                             {
                                 //if (io.File.GetAttributes(itemF.FullName).ToString().IndexOf(io.FileAttributes.ReadOnly.ToString()) != -1)
                                 //{
