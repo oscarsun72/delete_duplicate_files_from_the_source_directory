@@ -20,6 +20,7 @@ namespace 檔案總管汰重_WindowsFormsApplication1
 
         private void button1_Click(object sender, EventArgs e)
         {
+            if (dirs == null) return;
             if (string.IsNullOrWhiteSpace(textBox1.Text) || string.IsNullOrWhiteSpace(textBox1.Text)) return;
             if (textBox1.Text == textBox2.Text)
             {
@@ -41,6 +42,7 @@ namespace 檔案總管汰重_WindowsFormsApplication1
         // files are not the same.(這句「A return value of 0 indicates that the contents of the files
         // are the same.」應該改成「A return value of true(-1) indicates that the contents of the files……」
         // 0=fasle 怎麼會回傳0呢？)
+        //此法對大檔案就比較吃力了，畢竟是逐位元讀取以比較，詳另參：https://iter01.com/427750.html
         private bool FileCompare(string file1, string file2)
         {//https://docs.microsoft.com/zh-tw/troubleshoot/dotnet/csharp/create-file-compare?source=docs
             int file1byte;
