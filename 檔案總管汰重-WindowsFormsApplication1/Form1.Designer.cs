@@ -69,7 +69,7 @@
             this.textBox1.Location = new System.Drawing.Point(123, 46);
             this.textBox1.Margin = new System.Windows.Forms.Padding(2, 2, 2, 2);
             this.textBox1.Name = "textBox1";
-            this.textBox1.Size = new System.Drawing.Size(777, 27);
+            this.textBox1.Size = new System.Drawing.Size(620, 27);
             this.textBox1.TabIndex = 2;
             this.textBox1.Text = "來源資料夾路徑(拖放或點1下貼上即可)---可以一次多個資料夾同時處理";
             this.textBox1.Click += new System.EventHandler(this.textBox1_Click);
@@ -85,7 +85,7 @@
             this.textBox2.Location = new System.Drawing.Point(123, 108);
             this.textBox2.Margin = new System.Windows.Forms.Padding(2, 2, 2, 2);
             this.textBox2.Name = "textBox2";
-            this.textBox2.Size = new System.Drawing.Size(777, 27);
+            this.textBox2.Size = new System.Drawing.Size(620, 27);
             this.textBox2.TabIndex = 3;
             this.textBox2.Text = "目的資料夾路徑(拖放或點1下貼上即可)---一次只能指定一個資料夾來處理";
             this.textBox2.Click += new System.EventHandler(this.textBox2_Click);
@@ -160,7 +160,7 @@
             this.AcceptButton = this.button1;
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 12F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(911, 205);
+            this.ClientSize = new System.Drawing.Size(751, 205);
             this.Controls.Add(this.label4);
             this.Controls.Add(this.label3);
             this.Controls.Add(this.checkBox2);

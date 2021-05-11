@@ -5,6 +5,7 @@ using System.Diagnostics;
 using System.Drawing;
 using System.IO;
 using System.Linq;
+using System.Threading.Tasks;
 using System.Windows.Forms;
 using io = System.IO;
 
@@ -13,6 +14,7 @@ namespace 檔案總管汰重_WindowsFormsApplication1
     public partial class Form1 : Form
     {
         string[] dirs;
+        List<string> diTList = new List<string>();
         public Form1()
         {
             InitializeComponent();
@@ -21,19 +23,52 @@ namespace 檔案總管汰重_WindowsFormsApplication1
         private void button1_Click(object sender, EventArgs e)
         {
             if (dirs == null) return;
-            if (string.IsNullOrWhiteSpace(textBox1.Text) || string.IsNullOrWhiteSpace(textBox1.Text)) return;
+            if (string.IsNullOrWhiteSpace(textBox1.Text) || string.IsNullOrWhiteSpace(textBox2.Text)) return;
             if (textBox1.Text == textBox2.Text)
             {
                 MessageBox.Show("比對兩造雙方之路徑不能一樣！", "", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 return;
             }
+            foreach (Control item in Controls)
+            {
+                // textBox1.Enabled = false;textBox2.Enabled = false;
+                item.Enabled = false;
+            }
             Color cl = BackColor;
             BackColor = Color.Red; Refresh();
-            foreach (string item in dirs)
-            {//textBox1.Text=dirs[0]
-                deleteDuplicateFilesFromSourceLinq(item, textBox2.Text);
-            }
-            BackColor = cl; Refresh();
+            //string textBox2Text = textBox2.Text;
+            Task.Factory.StartNew(() =>//多執行緒多工處理
+            {//https://social.msdn.microsoft.com/Forums/vstudio/en-US/3a28f658-a047-4e52-9f53-9c1a4dad0014/how-to-use-quotcowaitformultiplehandlesquot-?forum=wpf
+             //loadingData();
+                
+                if (!diTList.Contains(textBox2.Text))//List.Contains等方法亦須其元素類別有支援比對運算才能，如DirectoryInfo沒有定義如是運算子，故無法正常運用Contains等方法 20210511
+                {//如果目的資料夾沒處理過才處理，已汰重過就不再浪費時間重做了
+                    deleteDuplicateFilesInADirectoryLinq(new DirectoryInfo(textBox2.Text));//先刪除目的檔案中所有重複的檔案
+                    diTList.Add(textBox2.Text);
+                }
+                //string[] ds = dirs ?? null;
+                //if (ds != null)
+                //{
+                    foreach (string item in dirs)//ds)
+                    {//textBox1.Text=dirs[0]
+                        deleteDuplicateFilesFromSourceLinq(item, textBox2.Text);
+                    }
+                //}
+            }).ContinueWith((t) =>
+            {
+
+                //displayAlert("Done !");
+
+                dirs = null;//汰重完須歸零
+                BackColor = cl; Refresh();
+                foreach (Control item in Controls)
+                {
+                    // textBox1.Enabled = false;textBox2.Enabled = false;
+                    item.Enabled = true;
+                }
+                WindowState = FormWindowState.Normal;
+                Activate();
+            }, System.Threading.CancellationToken.None, TaskContinuationOptions.None, TaskScheduler.FromCurrentSynchronizationContext());
         }
 
         // This method accepts two strings the represent two files to
@@ -93,10 +128,10 @@ namespace 檔案總管汰重_WindowsFormsApplication1
             // the same.
             return ((file1byte - file2byte) == 0);//相同檔案則byte也一樣，相減後之差為0 則與 0 相等，即傳回 true
         }
-        void deleteDuplicateFilesInaDirectoryLinq(DirectoryInfo di)
+        void deleteDuplicateFilesInADirectoryLinq(DirectoryInfo di)
         {
             IEnumerable<FileInfo> fiIEnum = di.GetFiles("*.*", SearchOption.AllDirectories);
-            IEnumerable<FileInfo> fiIEnumDuplicate;
+            IEnumerable<FileInfo> fiIEnumDuplicate; bool fDeleted = false;
             if (fiIEnum.Count() == 0) return;
             if (checkBox2.Checked)//不比對檔名
             {
@@ -107,15 +142,22 @@ namespace 檔案總管汰重_WindowsFormsApplication1
                                          && f.Length == fi.Length && f.LastWriteTime == fi.LastWriteTime &&
                                          f.Extension == fi.Extension
                                        select f;
-                    foreach (var item in fiIEnumDuplicate)
+                    if (fiIEnumDuplicate.Count() > 0)
                     {
-                        if (FileCompare(item.FullName, fi.FullName))//因為只比對副檔名，還是要小心謹慎點好！
-                            DeleteFileRemoveReadOnly(item);//刪除所有重複的檔案
+                        foreach (var item in fiIEnumDuplicate)
+                        {
+                            if (FileCompare(item.FullName, fi.FullName))//因為只比對副檔名，還是要小心謹慎點好！
+                            { DeleteFileRemoveReadOnly(item); fDeleted = true; }//刪除所有重複的檔案
+                        }
+                        if (fDeleted)
+                        {
+                            fiIEnum = di.GetFiles("*.*", SearchOption.AllDirectories);//刪除後更新檔案目錄清單
+                            fDeleted = false;
+                        }
                     }
-                    fiIEnum = di.GetFiles("*.*", SearchOption.AllDirectories);//刪除後更新檔案目錄清單
                 }
             }
-            else
+            else//須比對檔名
             {
                 foreach (FileInfo fi in fiIEnum)
                 {   //取得所有重複的檔案
@@ -124,11 +166,14 @@ namespace 檔案總管汰重_WindowsFormsApplication1
                                          && f.Length == fi.Length && f.LastWriteTime == fi.LastWriteTime &&
                                          f.Name == fi.Name//前後二者唯有此處條件略異耳20210511
                                        select f;
-                    foreach (var item in fiIEnumDuplicate)
+                    if (fiIEnumDuplicate.Count() > 0)
                     {
-                        DeleteFileRemoveReadOnly(item);//刪除所有重複的檔案
+                        foreach (var item in fiIEnumDuplicate)
+                        {
+                            DeleteFileRemoveReadOnly(item);//刪除所有重複的檔案
+                        }
+                        fiIEnum = di.GetFiles("*.*", SearchOption.AllDirectories);//刪除後更新檔案目錄清單
                     }
-                    fiIEnum = di.GetFiles("*.*", SearchOption.AllDirectories);//刪除後更新檔案目錄清單
                 }
             }
             ClearEmptyFolders(di, di.GetDirectories());//清空所有空的資料夾
@@ -140,8 +185,10 @@ namespace 檔案總管汰重_WindowsFormsApplication1
 
                 io.DirectoryInfo di = new io.DirectoryInfo(sourceDir);
                 IEnumerable<FileInfo> fiIEnum;
+                io.FileInfo[] fiArray = di.GetFiles("*.*", io.SearchOption.AllDirectories);
                 io.DirectoryInfo di2 = new io.DirectoryInfo(DestDir);
-                deleteDuplicateFilesInaDirectoryLinq(di2);//先刪除目的檔案中所有重複的檔案
+                //呼叫端跑迴圈時不可有以下此行，當於呼叫端處理一次即可
+                //deleteDuplicateFilesInADirectoryLinq(di2);//先刪除目的檔案中所有重複的檔案
                 io.FileInfo[] fiArray2 = di2.GetFiles("*.*", io.SearchOption.AllDirectories);
                 //foreach (io.FileInfo itemF in fiArray)//iterF(F:from;source)
                 //{//F=from 來源檔（拿來比較之檔，相同則刪除）;T=to 目的檔（被比較的檔案，相同則保留）;
@@ -149,25 +196,33 @@ namespace 檔案總管汰重_WindowsFormsApplication1
                 {
                     if (checkBox2.Checked)//not identical
                     {
-                        fiIEnum = from f in di.GetFiles("*.*", io.SearchOption.AllDirectories)
+                        fiIEnum = from f in fiArray
                                   where f.LastWriteTime == itemT.LastWriteTime &&
                                   f.Length == itemT.Length && f.Extension == itemT.Extension
                                   select f; //不比對檔名，只比對副檔名
-                        foreach (FileInfo itemF in fiIEnum)
+                        if (fiIEnum.Count() > 0)
                         {
-                            if (FileCompare(itemF.FullName, itemT.FullName))//只比對副檔名還是要謹慎一點，就是有剛好以上條件俱同而實際不同的檔案，測試時發現的，所幸。感恩感恩　南無阿彌陀佛 20210511
-                                DeleteFileRemoveReadOnly(itemF);
+                            foreach (FileInfo itemF in fiIEnum)
+                            {
+                                if (FileCompare(itemF.FullName, itemT.FullName))//只比對副檔名還是要謹慎一點，就是有剛好以上條件俱同而實際不同的檔案，測試時發現的，所幸。感恩感恩　南無阿彌陀佛 20210511
+                                    DeleteFileRemoveReadOnly(itemF);
+                            }
+                            fiArray = di.GetFiles("*.*", io.SearchOption.AllDirectories);
                         }
                     }
                     else
                     {
-                        fiIEnum = from f in di.GetFiles("*.*", io.SearchOption.AllDirectories)
+                        fiIEnum = from f in fiArray
                                   where f.LastWriteTime == itemT.LastWriteTime &&
                                   f.Length == itemT.Length && f.Name == itemT.Name//比對檔名(identical)
                                   select f;
-                        foreach (FileInfo itemF in fiIEnum)
+                        if (fiIEnum.Count() > 0)
                         {
-                            DeleteFileRemoveReadOnly(itemF);
+                            foreach (FileInfo itemF in fiIEnum)
+                            {
+                                DeleteFileRemoveReadOnly(itemF);
+                            }
+                            fiArray = di.GetFiles("*.*", io.SearchOption.AllDirectories);
                         }
 
                     }
@@ -361,6 +416,7 @@ namespace 檔案總管汰重_WindowsFormsApplication1
         {
             //textBox1.Text = "";
             textBox1.Text = Clipboard.GetText();
+            dirs = new string[1]; dirs[0] = textBox1.Text;//https://docs.microsoft.com/zh-tw/dotnet/csharp/programming-guide/arrays/single-dimensional-arrays
         }
         private void textBox2_Click(object sender, EventArgs e)
         {
