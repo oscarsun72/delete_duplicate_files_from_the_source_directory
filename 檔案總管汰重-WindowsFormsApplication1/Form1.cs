@@ -380,6 +380,7 @@ namespace 檔案總管汰重_WindowsFormsApplication1
             //https://wijtb.nctu.me/archives/269/
             string[] filePaths = (string[])e.Data.GetData(DataFormats.FileDrop);
             this.textBox1.Text = filePaths[0];//目前只取多種選取的第一個
+            //拖放作業目前只取多種選取的第一個，蓋若有多個資料夾要與一個目的夾比對，可以移至同一個母資料夾下，再指定該新建的母資料夾為來源夾即可
         }
 
         private void textBox2_DragDrop(object sender, DragEventArgs e)
