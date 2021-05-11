@@ -352,7 +352,8 @@ namespace 檔案總管汰重_WindowsFormsApplication1
         }
         public static void NoReadonly(FileInfo fi)
         {
-            if (IsReadonly(fi)) fi.Attributes &= ~io.FileAttributes.ReadOnly;
+            //if (IsReadonly(fi)) fi.Attributes &= ~io.FileAttributes.ReadOnly;
+            if (fi.IsReadOnly) fi.Attributes &= ~io.FileAttributes.ReadOnly;
         }
         private void textBox1_Click(object sender, EventArgs e)
         {
