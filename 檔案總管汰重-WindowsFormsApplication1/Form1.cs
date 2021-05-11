@@ -19,6 +19,7 @@ namespace 檔案總管汰重_WindowsFormsApplication1
         {
             InitializeComponent();
         }
+        int threadCount = 0;//記下現在有幾個線程（執行緒）
 
         private void button1_Click(object sender, EventArgs e)
         {
@@ -28,46 +29,43 @@ namespace 檔案總管汰重_WindowsFormsApplication1
             {
                 MessageBox.Show("比對兩造雙方之路徑不能一樣！", "", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 return;
-            }
-            foreach (Control item in Controls)
+            }            
+            if (threadCount > 0)
             {
-                // textBox1.Enabled = false;textBox2.Enabled = false;
-                item.Enabled = false;
+                BackColor = Color.Blue; Refresh();
+                System.Media.SystemSounds.Asterisk.Play();
             }
-            Color cl = BackColor;
             BackColor = Color.Red; Refresh();
             //string textBox2Text = textBox2.Text;
             Task.Factory.StartNew(() =>//多執行緒多工處理
             {//https://social.msdn.microsoft.com/Forums/vstudio/en-US/3a28f658-a047-4e52-9f53-9c1a4dad0014/how-to-use-quotcowaitformultiplehandlesquot-?forum=wpf
              //loadingData();
-                
+                threadCount++;
                 if (!diTList.Contains(textBox2.Text))//List.Contains等方法亦須其元素類別有支援比對運算才能，如DirectoryInfo沒有定義如是運算子，故無法正常運用Contains等方法 20210511
                 {//如果目的資料夾沒處理過才處理，已汰重過就不再浪費時間重做了
                     deleteDuplicateFilesInADirectoryLinq(new DirectoryInfo(textBox2.Text));//先刪除目的檔案中所有重複的檔案
                     diTList.Add(textBox2.Text);
                 }
-                //string[] ds = dirs ?? null;
-                //if (ds != null)
-                //{
+                string[] ds = dirs ?? null;
+                if (ds != null)
+                {
                     foreach (string item in dirs)//ds)
                     {//textBox1.Text=dirs[0]
                         deleteDuplicateFilesFromSourceLinq(item, textBox2.Text);
                     }
-                //}
+                }
             }).ContinueWith((t) =>
             {
 
                 //displayAlert("Done !");
-
-                dirs = null;//汰重完須歸零
-                BackColor = cl; Refresh();
-                foreach (Control item in Controls)
+                threadCount--;
+                if (threadCount == 0)
                 {
-                    // textBox1.Enabled = false;textBox2.Enabled = false;
-                    item.Enabled = true;
-                }
-                WindowState = FormWindowState.Normal;
-                Activate();
+                    dirs = null;//汰重完須歸零
+                    BackColor = SystemColors.Control; Refresh();
+                    WindowState = FormWindowState.Normal;
+                    Activate();
+                }                
             }, System.Threading.CancellationToken.None, TaskContinuationOptions.None, TaskScheduler.FromCurrentSynchronizationContext());
         }
 
@@ -234,15 +232,18 @@ namespace 檔案總管汰重_WindowsFormsApplication1
                 io.DirectoryInfo[] diSubfolders;
                 if (fiIEnum.Count() == 0)
                 {//當沒有檔案，只剩資料夾時
-                    diSubfolders = di.GetDirectories("*.*", io.SearchOption.AllDirectories);
-                    if (diSubfolders.Length == 0)
-                    {//如果沒有子資料夾/子目錄時，就直接刪除處理的資料夾目錄：
-                        io.Directory.Delete(sourceDir); //if no more files in this directory then delete this directory
-                                                        //若但用 if (io.Directory.GetFiles(sourceDir).Count() == 0）來判斷，則當尚有子目錄時會出錯
-                    }
-                    else
-                    {//如果有子資料夾/子目錄時，須逐一清空各資料夾目錄（當某一資料夾含有子目錄時，不能直接將其刪除）：
-                        diSubfolders = ClearEmptyFolders(di, diSubfolders);
+                    if (Directory.Exists(di.FullName))
+                    {
+                        diSubfolders = di.GetDirectories("*.*", io.SearchOption.AllDirectories);
+                        if (diSubfolders.Length == 0)
+                        {//如果沒有子資料夾/子目錄時，就直接刪除處理的資料夾目錄：
+                            io.Directory.Delete(sourceDir); //if no more files in this directory then delete this directory
+                                                            //若但用 if (io.Directory.GetFiles(sourceDir).Count() == 0）來判斷，則當尚有子目錄時會出錯
+                        }
+                        else
+                        {//如果有子資料夾/子目錄時，須逐一清空各資料夾目錄（當某一資料夾含有子目錄時，不能直接將其刪除）：
+                            diSubfolders = ClearEmptyFolders(di, diSubfolders);
+                        }
                     }
                 }
                 else
@@ -328,8 +329,17 @@ namespace 檔案總管汰重_WindowsFormsApplication1
         public static void DeleteFileRemoveReadOnly(FileInfo fileInfo)
         {
             NoReadonly(fileInfo);
-            fileInfo.Delete();//上下兩式作用相同
-            //io.File.Delete(fileInfo.FullName);//delete from the source file                            
+            try
+            {
+                fileInfo.Delete();//上下兩式作用相同
+                                  //io.File.Delete(fileInfo.FullName);//delete from the source file                            
+            }
+            catch (Exception)
+            {
+                Application.DoEvents();
+                fileInfo.Delete();
+                //throw;
+            }
         }
 
         public static DirectoryInfo[] ClearEmptyFolders(DirectoryInfo di, DirectoryInfo[] diSubfolders)
@@ -349,7 +359,10 @@ namespace 檔案總管汰重_WindowsFormsApplication1
                         io.DirectoryInfo[] dis = sdi.GetDirectories("*.*", io.SearchOption.AllDirectories);
                         if (dis.Length == 0)
                         {
-                            sdi.Delete();
+                            if (Directory.Exists(sdi.FullName))
+                            {
+                                sdi.Delete();
+                            }
                         }
                         sdI = from dI in di.GetDirectories("*.*", io.SearchOption.AllDirectories)
                               where dI.GetFiles("*.*", io.SearchOption.AllDirectories).Count() == 0 && dI.GetDirectories
@@ -382,7 +395,10 @@ namespace 檔案總管汰重_WindowsFormsApplication1
                 //if (di.Attributes.ToString().IndexOf(io.FileAttributes.ReadOnly.ToString()) != -1)
                 //    di.Attributes &= ~io.FileAttributes.ReadOnly;//https://stackoverflow.com/questions/2316308/remove-readonly-attribute-from-directory
                 NoReadonly(di);
-                di.Delete();
+                if (Directory.Exists(di.FullName))
+                {
+                    di.Delete();
+                }
             }
             return diSubfolders;
         }
