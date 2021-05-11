@@ -364,14 +364,15 @@ namespace 檔案總管汰重_WindowsFormsApplication1
 
         private void Form1_DragEnter(object sender, DragEventArgs e)
         {//https://wijtb.nctu.me/archives/269/
-            if (e.Data.GetDataPresent(DataFormats.FileDrop))
-            {
-                e.Effect = DragDropEffects.All;//调用DragDrop事件 
-            }
-            else
-            {
-                e.Effect = DragDropEffects.None;
-            }
+            e.Effect = DragDropEffects.All;
+            //if (e.Data.GetDataPresent(DataFormats.FileDrop))
+            //{
+            //    e.Effect = DragDropEffects.All;//调用DragDrop事件 
+            //}
+            //else
+            //{
+            //    e.Effect = DragDropEffects.None;
+            //}
         }
 
         private void textBox1_DragDrop(object sender, DragEventArgs e)
@@ -412,7 +413,7 @@ namespace 檔案總管汰重_WindowsFormsApplication1
             TextBox tbx = (TextBox)sender;
             switch (e.Button)
             {
-                case MouseButtons.Right:
+                case MouseButtons.Middle:
                     Process pc = new Process();
                     if (Directory.Exists(tbx.Text) == false) return;
                     pc.StartInfo.FileName = tbx.Text;
