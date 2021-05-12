@@ -29,7 +29,7 @@ namespace 檔案總管汰重_WindowsFormsApplication1
             {
                 MessageBox.Show("比對兩造雙方之路徑不能一樣！", "", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 return;
-            }            
+            }
             if (threadCount > 0)
             {
                 BackColor = Color.Blue; Refresh();
@@ -65,7 +65,7 @@ namespace 檔案總管汰重_WindowsFormsApplication1
                     BackColor = SystemColors.Control; Refresh();
                     WindowState = FormWindowState.Normal;
                     Activate();
-                }                
+                }
             }, System.Threading.CancellationToken.None, TaskContinuationOptions.None, TaskScheduler.FromCurrentSynchronizationContext());
         }
 
@@ -144,8 +144,14 @@ namespace 檔案總管汰重_WindowsFormsApplication1
                     {
                         foreach (var item in fiIEnumDuplicate)
                         {
-                            if (FileCompare(item.FullName, fi.FullName))//因為只比對副檔名，還是要小心謹慎點好！
-                            { DeleteFileRemoveReadOnly(item); fDeleted = true; }//刪除所有重複的檔案
+                            if (item.Name != fi.Name)
+                            {
+                                if (FileCompare(item.FullName, fi.FullName))//因為只比對副檔名，還是要小心謹慎點好！
+                                { DeleteFileRemoveReadOnly(item); fDeleted = true; }//刪除所有重複的檔案
+                            }
+                            else//如果連檔名也一樣，就不必太計較了，重複誤殺的機率太小，幾乎是不可能的，除非某些軟體檔、系統檔20210512
+                            { DeleteFileRemoveReadOnly(item); fDeleted = true; }
+
                         }
                         if (fDeleted)
                         {
@@ -180,7 +186,7 @@ namespace 檔案總管汰重_WindowsFormsApplication1
         {
             if (io.Directory.Exists(sourceDir) && io.Directory.Exists(DestDir))
             {
-
+                bool fDeleted = false;
                 io.DirectoryInfo di = new io.DirectoryInfo(sourceDir);
                 IEnumerable<FileInfo> fiIEnum;
                 io.FileInfo[] fiArray = di.GetFiles("*.*", io.SearchOption.AllDirectories);
@@ -202,10 +208,19 @@ namespace 檔案總管汰重_WindowsFormsApplication1
                         {
                             foreach (FileInfo itemF in fiIEnum)
                             {
-                                if (FileCompare(itemF.FullName, itemT.FullName))//只比對副檔名還是要謹慎一點，就是有剛好以上條件俱同而實際不同的檔案，測試時發現的，所幸。感恩感恩　南無阿彌陀佛 20210511
-                                    DeleteFileRemoveReadOnly(itemF);
+                                if (itemF.Name != itemT.Name)
+                                {
+                                    if (FileCompare(itemF.FullName, itemT.FullName))//只比對副檔名還是要謹慎一點，就是有剛好以上條件俱同而實際不同的檔案，測試時發現的，所幸。感恩感恩　南無阿彌陀佛 20210511
+                                    { DeleteFileRemoveReadOnly(itemF); fDeleted = true; }
+                                }
+                                else//如果連檔名也相同，就不必再太計較了
+                                { DeleteFileRemoveReadOnly(itemF); fDeleted = true; }
                             }
-                            fiArray = di.GetFiles("*.*", io.SearchOption.AllDirectories);
+                            if (fDeleted)
+                            {
+                                fiArray = di.GetFiles("*.*", io.SearchOption.AllDirectories);
+                                fDeleted = false;
+                            }
                         }
                     }
                     else
