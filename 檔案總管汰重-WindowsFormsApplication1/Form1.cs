@@ -77,11 +77,16 @@ namespace 檔案總管汰重_WindowsFormsApplication1
         // 0=fasle 怎麼會回傳0呢？)
         //此法對大檔案就比較吃力了，畢竟是逐位元讀取以比較，詳另參：https://iter01.com/427750.html
         private bool FileCompare(string file1, string file2)
-        {//https://docs.microsoft.com/zh-tw/troubleshoot/dotnet/csharp/create-file-compare?source=docs
+        {//https://docs.microsoft.com/zh-tw/troubleshoot/dotnet/csharp/create-file-compare?source=docs            
+            if (!File.Exists(file1) || !File.Exists(file2)) return false;
             int file1byte;
             int file2byte;
             FileStream fs1;
             FileStream fs2;
+            FileInfo fi1=new FileInfo(file1);
+            FileInfo fi2=new FileInfo(file2);
+            bool fi1ReadOnly = fi1.IsReadOnly;
+            bool fi2ReadOnly = fi2.IsReadOnly;
 
             // Determine if the same file was referenced two times.
             if (file1 == file2)
@@ -90,6 +95,11 @@ namespace 檔案總管汰重_WindowsFormsApplication1
                 return true;
             }
 
+
+            if (fi1.IsReadOnly||fi2.IsReadOnly)
+            {
+                fi1.IsReadOnly = false;fi2.IsReadOnly = false;
+            }
             // Open the two files.
             fs1 = new FileStream(file1, FileMode.Open);
             fs2 = new FileStream(file2, FileMode.Open);
@@ -101,7 +111,7 @@ namespace 檔案總管汰重_WindowsFormsApplication1
                 // Close the file
                 fs1.Close();
                 fs2.Close();
-
+                fi1.IsReadOnly = fi1ReadOnly;fi2.IsReadOnly = fi2ReadOnly;
                 // Return false to indicate files are different
                 return false;
             }
@@ -120,12 +130,14 @@ namespace 檔案總管汰重_WindowsFormsApplication1
             // Close the files.
             fs1.Close();
             fs2.Close();
-
+            fi1.IsReadOnly = fi1ReadOnly; fi2.IsReadOnly = fi2ReadOnly;
             // Return the success of the comparison. "file1byte" is
             // equal to "file2byte" at this point only if the files are
             // the same.
             return ((file1byte - file2byte) == 0);//相同檔案則byte也一樣，相減後之差為0 則與 0 相等，即傳回 true
         }
+
+
         void deleteDuplicateFilesInADirectoryLinq(DirectoryInfo di)
         {
             IEnumerable<FileInfo> fiIEnum = di.GetFiles("*.*", SearchOption.AllDirectories);
@@ -135,6 +147,7 @@ namespace 檔案總管汰重_WindowsFormsApplication1
             {
                 foreach (FileInfo fi in fiIEnum)
                 {   //取得所有重複的檔案
+                    if (!fi.Exists) continue;
                     fiIEnumDuplicate = from f in fiIEnum
                                        where f.FullName != fi.FullName //不包括本身（即至少留下一個檔案）
                                          && f.Length == fi.Length && f.LastWriteTime == fi.LastWriteTime &&
